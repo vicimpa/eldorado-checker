@@ -2,9 +2,13 @@
   "name": "checker",
   "module": "index.ts",
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "esbuild": "^0.19.11"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "build": "esbuild index.ts --bundle --target=node21 --platform=node --outfile=checker.js"
   }
 }

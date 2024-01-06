@@ -1,15 +1,33 @@
-# checker
+# Funpay id checker
 
-To install dependencies:
+Установка зависимостей
 
 ```bash
 bun install
 ```
 
-To run:
+Запуск
 
 ```bash
 bun run index.ts
 ```
 
-This project was created using `bun init` in bun v1.0.21. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+Параметры
+```
+# Создать input.txt
+# Указать туда ники на Eldorado
+# Запустить скрипт
+```
+
+Сборка на ноде
+```bash
+npm install
+npm run build
+```
+
+Запуск на ноде
+```bash
+./checker.js
+```
+
+
