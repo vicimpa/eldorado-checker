@@ -1,3 +1,5 @@
+import { query } from "./query";
+
 type TAccount = {
   user_id: string;
   about_me: string;
@@ -83,6 +85,7 @@ type TItem = {
 
 type TBrand = {
   brand_id: string;
+  is_official: boolean;
   total_result: number;
 };
 
@@ -98,11 +101,28 @@ type TError = {
   text: string;
 };
 
+type TSearchCategory = {
+  cat_id: string;
+  cat_name: {
+    en: string;
+    id: string;
+    "zh-CN": string;
+    "zh-TW": string;
+  };
+  service_id: string;
+  offer_status: {
+    live: number;
+    delisted: number;
+    delisted_by_g2g: number;
+    delisted_pending: number;
+    denied: number;
+  };
+};
+
 class G2GStackError extends Error {
   constructor(public messages: TError[]) {
     super('ErrorStack: \n' + messages.map(e => '  ' + e.text).join('\n'));
   }
-
 }
 
 const checkError = (e: any) => {
@@ -121,49 +141,63 @@ class G2G {
       .then(e => e.payload);
   }
 
-  async searchBrands(userId: string): Promise<TBrand[]> {
-    return fetch(`${this.base}/offer/seller/${userId}/brands`)
+  async searchBrands(userId: string, root_id: string, service_id: string): Promise<TBrand[]> {
+    const q = query({ root_id, service_id });
+    return fetch(`${this.base}/offer/seller/${userId}/brands?${q}`)
+      .then(e => e.json())
+      .then(checkError)
+      .then(e => [].concat(...e.payload.results.map((e: any) => e.brands)));
+  }
+
+  async searchItems(seller: string, brand_id: string, service_id: string, page: number, page_size = 48): Promise<TItem[]> {
+    const q = query({ seller, brand_id, page, page_size, service_id, currency: 'EUR', country: 'RU' });
+
+    return fetch(`${this.base}/offer/search?${q}`)
       .then(e => e.json())
       .then(checkError)
       .then(e => e.payload.results);
   }
 
-  async searchItems(name: string, brand_id: string, page: number, pageSize = 48): Promise<TItem[]> {
-    return fetch(`${this.base}/offer/search?brand_id=${brand_id}&currency=EUR&country=RU&seller=${name}&page=${page}&page_size=${pageSize}`)
-      .then(e => e.json())
-      .then(checkError)
-      .then(e => e.payload.results);
-  }
-
-  async searchResultCount(name: string, brand_id: string, page: number, pageSize = 48): Promise<TResultCount> {
-    return fetch(`${this.base}/offer/search_result_count?brand_id=${brand_id}&currency=EUR&country=RU&seller=${name}&page=${page}&page_size=${pageSize}`)
+  async searchResultCount(seller: string, brand_id: string, service_id: string, page: number, page_size = 48): Promise<TResultCount> {
+    const q = query({ seller, brand_id, page, page_size, service_id, currency: 'EUR', country: 'RU' });
+    return fetch(`${this.base}/offer/search_result_count?${q}`)
       .then(e => e.json())
       .then(checkError)
       .then(e => e.payload);
   }
 
+  async searchCategory(id: string, name: string) {
+    return fetch(`${this.base}/offer/seller/${id}/categories?group_by_categories=1`)
+      .then(e => e.json())
+      .then(checkError)
+      .then(e => e.payload.results as TSearchCategory[])
+      .then(e => e.find(e => e.cat_name.en === name));
+  }
+
   async fetchItems(name: string, pageSize = 48) {
     const result: TItem[] = [];
     const { user_id } = await this.getAccountByName(name);
-    const brands = await G2GAPI.searchBrands(user_id);
+    const category = await this.searchCategory(user_id, 'Accounts');
 
-    console.log('Search brands', user_id);
+    if (!category)
+      throw new Error('No find category Accounts');
+    const brands = await this.searchBrands(user_id, category.cat_id, category.service_id);
+    console.log('Search brands', user_id, brands.length);
 
     for (const { brand_id } of brands) {
       console.log('Run', brand_id);
 
-      const count = await G2GAPI.searchResultCount(name, brand_id, 1, pageSize);
+      const count = await this.searchResultCount(name, brand_id, category.service_id, 1, pageSize);
       if (!count.total_result) {
         continue;
       }
-
 
       let page = 0;
       let totalPage = Math.ceil(count.total_result / count.page_size);
 
       do {
         console.log('Get page', page + 1, 'in', totalPage);
-        result.push(...await G2GAPI.searchItems(name, brand_id, ++page, pageSize));
+        result.push(...await this.searchItems(name, brand_id, category.service_id, ++page, pageSize));
       } while (page < totalPage);
     }
 

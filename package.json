@@ -9,6 +9,8 @@
     "typescript": "^5.0.0"
   },
   "scripts": {
-    "build": "esbuild index.ts --bundle --target=node21 --platform=node --outfile=checker.js"
+    "build-eld": "esbuild eldorado.ts --bundle --target=node21 --platform=node --outfile=checker-eld.js",
+    "build-g2g": "esbuild g2g.ts --bundle --target=node21 --platform=node --outfile=checker-g2g.js",
+    "build": "npm run build-eld && npm run build-g2g"
   }
 }

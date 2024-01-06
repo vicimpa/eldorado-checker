@@ -1,3 +1,5 @@
+import { query } from "./query";
+
 type TAccount = {
   id: string;
   username: string;
@@ -73,13 +75,9 @@ class Eldorado {
   }
 
   async getItems(id: string, pageIndex: number = 1, pageSize = 39, offerType = 'Account'): Promise<TResult> {
-    const query = Object
-      .entries({ pageIndex, pageSize, offerType })
-      .map(([key, value]) => `${key}=${value}`)
-      .join('&');
-
+    const q = query({ pageIndex, pageSize, offerType });
     console.log(`Getting items ${id} with`, JSON.stringify({ pageIndex }));
-    return await fetch(`${this.base}/flexibleOffers/user/${id}/?${query}`)
+    return await fetch(`${this.base}/flexibleOffers/user/${id}/?${q}`)
       .then(e => e.json());
   }
 

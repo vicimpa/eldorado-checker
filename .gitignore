@@ -1,8 +1,5 @@
 # Based on https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore
 
-checker.js
-input.txt
-output.txt
 # Logs
 
 logs
@@ -121,7 +118,6 @@ out
 # Nuxt.js build / generate output
 
 .nuxt
-dist
 
 # Gatsby files
 
